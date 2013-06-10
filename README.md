@@ -5,3 +5,4 @@ Why would anyone want to do this? If you are running legacy Windows audio softwa
   * You will need the original VST SDK version 2.4 unzipped into the vstsdk2.4 directory.
   * You will need the `mingw32` package installed, for example with aptitude.
 
+Copyright Chris McCormick, 2013, GPLv3 licensed. See the file COPYING.txt for details.
