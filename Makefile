@@ -3,6 +3,8 @@ VSTSDKDIR = ../vstsdk2.4
 PLUGINNAME = $(shell basename $(shell pwd))
 
 CPP = i586-mingw32msvc-g++
+LD = i586-mingw32msvc-ld
+OBJCOPY = i586-mingw32msvc-objcopy
 OBJ = $(PLUGINNAME).o $(VSTSDKDIR)/public.sdk/source/vst2.x/vstplugmain.o $(VSTSDKDIR)/public.sdk/source/vst2.x/audioeffect.o $(VSTSDKDIR)/public.sdk/source/vst2.x/audioeffectx.o
 LIBS = -L. --add-stdcall-alias -lole32 -lkernel32 -lgdi32 -luuid -luser32 --no-export-all-symbols --def $(PLUGINNAME).def   
 CXXINCS = -I"$(VSTSDKDIR)/pluginterfaces/vst2.x" -I"$(VSTSDKDIR)/public.sdk/source/vst2.x" -I"$(VSTSDKDIR)" -I"$(VSTSDKDIR)/vstgui.sf/vstgui" -I.
@@ -15,16 +17,26 @@ RM = rm -f
 all: $(PLUGINNAME).dll
 
 clean: 
-	${RM} $(OBJ) $(BIN) lib$(PLUGINNAME)_dll.a
+	${RM} data.o $(OBJ) $(BIN) lib$(PLUGINNAME)_dll.a
 
 DLLWRAP   = i586-mingw32msvc-dllwrap
 DEFFILE   = lib$(PLUGINNAME).def
 STATICLIB = lib$(PLUGINNAME).a
 
-$(BIN): $(OBJ)
+# if there is a data object to embed, do so
+ifeq ($(wildcard data.txt),) 
+    DATAOBJ =
+else 
+    DATAOBJ = data.o
+endif
+
+$(DATAOBJ): data.txt
+	# $(OBJCOPY) --input binary --output-target elf32-i386 --binary-architecture i386 data.txt data.o
+	$(LD) -r -b binary -o data.o data.txt
+
+$(BIN): $(OBJ) $(DATAOBJ)
 	# $(DLLWRAP) --output-def $(DEFFILE) --driver-name c++ --implib $(STATICLIB) $(OBJ) $(LIBS) -o $(BIN)
-	# $(DLLWRAP) --output-def $(DEFFILE) --implib $(STATICLIB) $(OBJ) $(LIBS) -o $(BIN)
-	$(CPP) -shared -o $(PLUGINNAME).dll $(OBJ) $(LIBS) -Wl,--out-implib,lib$(PLUGINNAME)_dll.a
+	$(CPP) -shared -o $(PLUGINNAME).dll $(OBJ) $(DATAOBJ) $(LIBS) -Wl,--out-implib,lib$(PLUGINNAME)_dll.a
 
 $(PLUGINNAME).o: $(PLUGINNAME).cpp
 	$(CPP) -c $(PLUGINNAME).cpp -o $(PLUGINNAME).o $(CXXFLAGS)
